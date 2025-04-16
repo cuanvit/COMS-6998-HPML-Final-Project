@@ -1,0 +1,43 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Byte-compiled
+*.pyo
+*.pyd
+*.pyc
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# macOS system files
+.DS_Store
+
+# VS Code workspace settings
+.vscode/
+
+# Python packaging
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Checkpoint/model weights
+*.pt
+*.bin
+*.ckpt
+
+# Tokenizer/training artifacts
+*.json
+*.log
+*.out
+*.pkl
+
+# Hugging Face cache
+~/.cache/huggingface/
