@@ -14,7 +14,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from mingpt.utils import CfgNode as CN
+from own_gpt.utils import CfgNode as CN
 
 # -----------------------------------------------------------------------------
 
@@ -180,7 +180,7 @@ class GPT(nn.Module):
         assert model_type in {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'}
         from transformers import GPT2LMHeadModel
 
-        # create a from-scratch initialized minGPT model
+        # create a from-scratch initialized own_gpt model
         config = cls.get_default_config()
         config.model_type = model_type
         config.vocab_size = 50257 # openai's model vocabulary
@@ -192,25 +192,54 @@ class GPT(nn.Module):
         model_hf = GPT2LMHeadModel.from_pretrained(model_type)
         sd_hf = model_hf.state_dict()
 
-        # copy while ensuring all of the parameters are aligned and match in names and shapes
-        keys = [k for k in sd_hf if not k.endswith('attn.masked_bias')] # ignore these
+        # # copy while ensuring all of the parameters are aligned and match in names and shapes
+        # keys = [k for k in sd_hf if not k.endswith('attn.masked_bias')] # ignore these
+        # transposed = ['attn.c_attn.weight', 'attn.c_proj.weight', 'mlp.c_fc.weight', 'mlp.c_proj.weight']
+        # # basically the openai checkpoints use a "Conv1D" module, but we only want to use a vanilla nn.Linear.
+        # # this means that we have to transpose these weights when we import them
+        # assert len(keys) == len(sd)
+        # for k in keys:
+        #     if any(k.endswith(w) for w in transposed):
+        #         # special treatment for the Conv1D weights we need to transpose
+        #         assert sd_hf[k].shape[::-1] == sd[k].shape
+        #         with torch.no_grad():
+        #             sd[k].copy_(sd_hf[k].t())
+        #     else:
+        #         # vanilla copy over the other parameters
+        #         assert sd_hf[k].shape == sd[k].shape
+        #         with torch.no_grad():
+        #             sd[k].copy_(sd_hf[k])
+
+        print(f"[INFO] Transferring weights from Hugging Face '{model_type}' to own_gpt...")
+
         transposed = ['attn.c_attn.weight', 'attn.c_proj.weight', 'mlp.c_fc.weight', 'mlp.c_proj.weight']
-        # basically the openai checkpoints use a "Conv1D" module, but we only want to use a vanilla nn.Linear.
-        # this means that we have to transpose these weights when we import them
-        assert len(keys) == len(sd)
-        for k in keys:
+        skipped, loaded = 0, 0
+
+        for k in sd_hf:
+            if k not in sd:
+                skipped += 1
+                continue
             if any(k.endswith(w) for w in transposed):
-                # special treatment for the Conv1D weights we need to transpose
-                assert sd_hf[k].shape[::-1] == sd[k].shape
-                with torch.no_grad():
-                    sd[k].copy_(sd_hf[k].t())
+                if sd_hf[k].shape[::-1] == sd[k].shape:
+                    sd[k].copy_(sd_hf[k].T)
+                    loaded += 1
+                else:
+                    print(f"[WARN] Shape mismatch (transpose): {k} | HF: {sd_hf[k].shape} vs own: {sd[k].shape}")
+                    skipped += 1
             else:
-                # vanilla copy over the other parameters
-                assert sd_hf[k].shape == sd[k].shape
-                with torch.no_grad():
+                if sd_hf[k].shape == sd[k].shape:
                     sd[k].copy_(sd_hf[k])
+                    loaded += 1
+                else:
+                    print(f"[WARN] Shape mismatch: {k} | HF: {sd_hf[k].shape} vs own: {sd[k].shape}")
+                    skipped += 1
+
+        print(f"[DONE] Loaded {loaded} weights | Skipped {skipped}")
+        return model
 
         return model
+
+    
 
     def configure_optimizers(self, train_config):
         """

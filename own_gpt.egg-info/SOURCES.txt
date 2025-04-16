@@ -1,0 +1,11 @@
+setup.py
+own_gpt/__init__.py
+own_gpt/bpe.py
+own_gpt/model.py
+own_gpt/trainer.py
+own_gpt/utils.py
+own_gpt.egg-info/PKG-INFO
+own_gpt.egg-info/SOURCES.txt
+own_gpt.egg-info/dependency_links.txt
+own_gpt.egg-info/requires.txt
+own_gpt.egg-info/top_level.txt
