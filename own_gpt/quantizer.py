@@ -9,6 +9,7 @@ class Quantizer:
         self.edges   = edges
 
     def encode(self, rets):
+        # Want stuff within a specific range, so clipping
         r = np.clip(rets, -self.clip, self.clip)
         return np.digitize(r, self.edges) - 1
 
