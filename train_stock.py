@@ -29,7 +29,7 @@ def main():
     clip       = 0.05
     batch_size = 32
     epochs     = 10
-    lr         = 5e-4
+    lr         = 1e-3
 
     # data loader setup
     train_ds = StockDataset(
@@ -48,7 +48,7 @@ def main():
 
     # Setting up the model
     cfg = GPT.get_default_config()
-    cfg.model_type = 'gpt-micro'
+    cfg.model_type = 'gpt-mini'
     cfg.vocab_size = bins
     cfg.block_size = seq_len
     model = GPT(cfg)
@@ -59,20 +59,23 @@ def main():
 
     # training loop 
     for epoch in range(epochs):
+        running_loss = 0.0
         for batch_idx, (x, y) in enumerate(train_loader):
             # batch shapes
             # x: (batch_size, seq_len)
             # y: (batch_size, seq_len)
-            x = x.to(device)
-            y = y.to(device)
-
+            x, y = x.to(device), y.to(device)
             logits, loss = model(x, y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            if batch_idx % 100000 == 0:
-                print(f"Epoch {epoch+1}/{epochs}, batch {batch_idx}, loss {loss.item():.4f}")
+            running_loss += loss.item()
+
+            if batch_idx % 100 == 0:
+                avg100 = running_loss / 100
+                print(f"Epoch {epoch+1}/{epochs}, batch {batch_idx}, avg loss over last 100 batches: {avg100:.4f}")
+                running_loss = 0.0
 
     # ── save checkpoint ───────────────────────────────────
     torch.save(model.state_dict(), 'ckpt_stock.pth')

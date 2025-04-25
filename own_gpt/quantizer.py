@@ -1,7 +1,7 @@
 import numpy as np
 
 class Quantizer:
-    def __init__(self, num_bins=256, clip=0.05):
+    def __init__(self, num_bins=64, clip=0.05):
         self.num_bins = num_bins
         self.clip = clip
         edges = np.linspace(-clip, clip, num_bins + 1)
