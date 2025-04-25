@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from .quantizer import Quantizer
 
 # minGPT/data/stock_dataset.py
-class StockSequenceDataset(Dataset):
+class StockDataset(Dataset):
     def __init__(self, tickers, seq_len, split='train', clip=0.05, bins=256):
         """
         tickers: list of symbols, last one is held-out for zero-shot if split='test'
