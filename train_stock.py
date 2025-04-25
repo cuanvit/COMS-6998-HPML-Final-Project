@@ -9,8 +9,6 @@ import pandas as pd
 
 def main():
 
-
-
     # 1) Grab all the tables on the page…
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     tables = pd.read_html(url, header=0)
