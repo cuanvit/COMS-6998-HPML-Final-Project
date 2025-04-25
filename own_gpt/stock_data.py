@@ -1,38 +1,38 @@
 import yfinance as yf
 import numpy as np
-import numpy as np
 import torch
 from torch.utils.data import Dataset
 from .quantizer import Quantizer
 
-# minGPT/data/stock_dataset.py
 class StockDataset(Dataset):
     def __init__(self, tickers, seq_len, split='train', clip=0.05, bins=256):
-        """
-        tickers: list of symbols, last one is held-out for zero-shot if split='test'
-       seq_len: context window
-        """
         quant = Quantizer(num_bins=bins, clip=clip)
         all_tokens = []
         for tk in tickers:
-            data = yf.download(tk, period='2y', interval='1d')['Close'].values
-            rets = np.diff(data) / data[:-1]
+            df = yf.download(tk, period='2y', interval='1d', auto_adjust=False, progress=False)
+            rets = df['Close'].pct_change().dropna().to_numpy()
             all_tokens.append(quant.encode(rets))
 
-        # split out the last ticker as zero-shot test
-        if split == 'train':
-            tokens = np.concatenate(all_tokens[:-1])
-        else:
-            tokens = all_tokens[-1]
+        tokens = np.concatenate(all_tokens[:-1]) if split=='train' else all_tokens[-1]
 
-        self.x, self.y = [], []
-        for i in range(len(tokens)-seq_len):
-            window = tokens[i:i+seq_len+1]
-            self.x.append(window[:-1])
-            self.y.append(window[1:])
+        xs, ys = [], []
+        for i in range(len(tokens) - seq_len):
+            window = tokens[i : i + seq_len + 1]
+            xs.append(window[:-1])
+            ys.append(window[1:])
 
-        self.x = torch.tensor(self.x, dtype=torch.long)
-        self.y = torch.tensor(self.y, dtype=torch.long)
+        xs = np.stack(xs, axis=0).astype(np.int64)
+        ys = np.stack(ys, axis=0).astype(np.int64)
 
-    def __len__(self): return len(self.x)
-    def __getitem__(self, i): return self.x[i], self.y[i]
+        x_tensor = torch.from_numpy(xs)
+        y_tensor = torch.from_numpy(ys)
+
+        # **KEY FIX**: collapse any stray singleton dims
+        self.x = x_tensor.view(x_tensor.size(0), -1)
+        self.y = y_tensor.view(y_tensor.size(0), -1)
+
+    def __len__(self):
+        return self.x.size(0)
+
+    def __getitem__(self, idx):
+        return self.x[idx], self.y[idx]

@@ -1,18 +1,91 @@
-# train_stock.py
-
-import argparse
 import torch
 from torch.utils.data import DataLoader
-import numpy as np
+import torch.nn.functional as F
 
-from own_gpt.utils      import set_seed, CfgNode
-from own_gpt.quantizer  import Quantizer
+from own_gpt.utils      import set_seed
 from own_gpt.stock_data import StockDataset
 from own_gpt.model      import GPT
-from own_gpt.trainer    import Trainer
-
+import pandas as pd
 
 def main():
+
+
+
+    # 1) Grab all the tables on the page…
+    url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+    tables = pd.read_html(url, header=0)
+
+    # 2) Select the one that actually has the “Symbol” column  
+    for df in tables:
+        if 'Symbol' in df.columns:
+            sp500 = df
+            break
+
+    symbols = sp500['Symbol'].str.replace('.', '-', regex=False).tolist()
+
+    set_seed(42)
+
+    # hyperparameters. replace with args later
+    seq_len    = 64
+    bins       = 256
+    clip       = 0.05
+    batch_size = 32
+    epochs     = 10
+    lr         = 5e-4
+
+    # data loader setup
+    train_ds = StockDataset(
+        tickers=symbols,
+        seq_len=seq_len,
+        split='train',
+        clip=clip,
+        bins=bins
+    )
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
+
+    # # Checking shapes to make sure everything works
+    # x0, y0 = train_ds[0]
+    # print(f"▶ Sample shapes: x0 {tuple(x0.shape)}, y0 {tuple(y0.shape)}")
+
+
+    # Setting up the model
+    cfg = GPT.get_default_config()
+    cfg.model_type = 'gpt-micro'
+    cfg.vocab_size = bins
+    cfg.block_size = seq_len
+    model = GPT(cfg)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+
+    # training loop 
+    for epoch in range(epochs):
+        for batch_idx, (x, y) in enumerate(train_loader):
+            # batch shapes
+            # x: (batch_size, seq_len)
+            # y: (batch_size, seq_len)
+            x = x.to(device)
+            y = y.to(device)
+
+            logits, loss = model(x, y)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if batch_idx % 100000 == 0:
+                print(f"Epoch {epoch+1}/{epochs}, batch {batch_idx}, loss {loss.item():.4f}")
+
+    # ── save checkpoint ───────────────────────────────────
+    torch.save(model.state_dict(), 'ckpt_stock.pth')
+    print("Training complete, checkpoint saved to chpt_stock.pth")
+
+if __name__ == '__main__':
+    main()
+
+
+
+
     # # Read arguments
     # parser = argparse.ArgumentParser(description="Zero-shot stock forecasting with minGPT")
     # parser.add_argument('--tickers',   type=str,   default='AAPL,MSFT,GOOG,TSLA',
@@ -27,51 +100,3 @@ def main():
     # parser.add_argument('--max_epochs',type=int,   default=5)
     # parser.add_argument('--lr',        type=float, default=5e-4)
     # args = parser.parse_args()
-    set_seed(1234)
-    tickers    = ['AAPL','MSFT','GOOG','TSLA']   # TSLA held-out
-    seq_len    = 64
-    batch_size = 32
-    bins       = 256
-    clip       = 0.05
-    epochs     = 5
-    lr         = 5e-4
-
-    # set up quantizer and load the data
-    quant    = Quantizer(num_bins=bins, clip=clip)
-    # symbols  = args.tickers.split(',')
-    train_ds = StockDataset(symbols = tickers, seq_len=seq_len,
-                                    split='train', quantizer=quant)
-    # val_ds   = StockDataset(symbols=tickers, seq_len=seq_len,
-    #                                 split='test',  quantizer=quant)
-
-    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    # val_dl   = DataLoader(val_ds,   batch_size=batch_size)
-    
-    iters_per_epoch = len(train_ds) // batch_size
-    ma_iters = epochs * iters_per_epoch
-
-    # Make the GPT
-    model_cfg = CfgNode()
-    model_cfg.model_type = 'gpt-micro'   # 4-layer, 4-head, 128-dim
-    model_cfg.vocab_size = bins
-    model_cfg.block_size = seq_len
-    model = GPT(model_cfg)
-
-    # config for trainer
-    config = Trainer.get_default_config()
-    config.device = "auto"
-    config.batch_size = batch_size
-    config.learning_rate = lr
-    config.max_iters = ma_iters
-    
-    trainer = Trainer(config, model, train_ds)
-    
-    print("Starting training")
-    trainer.run()
-
-    ckpt_path = "ckpt_stock.pt"
-    torch.save(model.state_dict(), ckpt_path)
-    print(f"Model checkpoint saved to {ckpt_path}")
-
-if __name__ == '__main__':
-    main()

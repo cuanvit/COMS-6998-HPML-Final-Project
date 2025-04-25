@@ -11,7 +11,9 @@ class Quantizer:
     def encode(self, rets):
         # Want stuff within a specific range, so clipping
         r = np.clip(rets, -self.clip, self.clip)
-        return np.digitize(r, self.edges) - 1
+        ids = np.digitize(r, self.edges) - 1
+        ids = np.clip(ids, 0, self.num_bins - 1)
+        return ids
 
     def decode(self, ids):
         return self.centers[ids]
