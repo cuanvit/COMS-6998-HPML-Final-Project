@@ -1,37 +1,40 @@
 import torch
-from torch.utils.data import DataLoader
 import torch.nn.functional as F
+from torch.utils.data import DataLoader, WeightedRandomSampler
+from torch.optim.lr_scheduler import LambdaLR
+import numpy as np
+import pandas as pd
 
 from own_gpt.utils      import set_seed
 from own_gpt.stock_data import StockDataset
 from own_gpt.model      import GPT
-import pandas as pd
 
-def main():
-
-    # 1) Grab all the tables on the page…
-    url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    tables = pd.read_html(url, header=0)
-
-    # 2) Select the one that actually has the “Symbol” column  
+def fetch_sp500_tickers():
+    tables = pd.read_html(
+        'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies',
+        header=0
+    )
     for df in tables:
         if 'Symbol' in df.columns:
-            sp500 = df
-            break
+            return df['Symbol'].str.replace('.', '-', regex=False).tolist()
+    raise RuntimeError("Couldn't find S&P 500 table")
 
-    symbols = sp500['Symbol'].str.replace('.', '-', regex=False).tolist()
-
+def train_model():
     set_seed(42)
 
-    # hyperparameters. replace with args later
+    # Load tickers
+    symbols = fetch_sp500_tickers()
+    print(f"Loaded {len(symbols)} tickers")
+
+    # Hyperparameters: Change to args later
     seq_len    = 64
-    bins       = 256
+    bins       = 64
     clip       = 0.05
     batch_size = 32
-    epochs     = 10
+    epochs     = 5
     lr         = 1e-3
 
-    # data loader setup
+    # Dataset & class weights
     train_ds = StockDataset(
         tickers=symbols,
         seq_len=seq_len,
@@ -39,55 +42,103 @@ def main():
         clip=clip,
         bins=bins
     )
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 
-    # # Checking shapes to make sure everything works
-    # x0, y0 = train_ds[0]
-    # print(f"▶ Sample shapes: x0 {tuple(x0.shape)}, y0 {tuple(y0.shape)}")
+    # compute per-class inverse-frequency weights
+    all_labels   = train_ds.y.view(-1).numpy()
+    counts       = np.bincount(all_labels, minlength=bins).astype(float)
+    class_weights = torch.tensor(1.0 / (counts + 1e-6), dtype=torch.float32)
+    class_weights = (class_weights / class_weights.sum() * bins)
 
-
-    # Setting up the model
-    cfg = GPT.get_default_config()
-    cfg.model_type = 'gpt-mini'
-    cfg.vocab_size = bins
-    cfg.block_size = seq_len
-    model = GPT(cfg)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
+    class_weights = class_weights.to(device)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+    # Weighted sampling
+    inv_freq = class_weights.cpu().numpy()
+    window_weights = []
+    for window in train_ds.y.numpy():
+        window_weights.append(inv_freq[window].mean())
+    window_weights = torch.DoubleTensor(window_weights)
 
-    # training loop 
-    for epoch in range(epochs):
-        running_loss = 0.0
-        for batch_idx, (x, y) in enumerate(train_loader):
-            # batch shapes
-            # x: (batch_size, seq_len)
-            # y: (batch_size, seq_len)
+    sampler = WeightedRandomSampler(
+        weights=window_weights,
+        num_samples=len(window_weights),
+        replacement=True
+    )
+
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=batch_size,
+        sampler=sampler,
+        num_workers=4,
+        pin_memory=True
+    )
+
+    # Model setup (no dropout as our loss wasn't good with dropout) 
+    cfg = GPT.get_default_config()
+    cfg.model_type   = 'gpt-mini'   # 6-layer, 6-head, 192-dim
+    cfg.vocab_size   = bins
+    cfg.block_size   = seq_len
+    cfg.embd_pdrop   = 0.0
+    cfg.resid_pdrop  = 0.0
+    cfg.attn_pdrop   = 0.0
+
+    model = GPT(cfg).to(device)
+
+    # Optimizer + LR schedule
+    optimizer   = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
+    total_steps = epochs * len(train_loader)
+    warmup      = int(0.05 * total_steps)
+
+    def lr_lambda(step):
+        if step < warmup:
+            return step / warmup
+        return max(0.0, (total_steps - step) / (total_steps - warmup))
+
+    scheduler = LambdaLR(optimizer, lr_lambda)
+
+    # Training loop
+    model.train()
+    step, running_loss = 0, 0.0
+    for epoch in range(1, epochs+1):
+        for x, y in train_loader:
             x, y = x.to(device), y.to(device)
-            logits, loss = model(x, y)
+
+            # forward + weighted cross-entropy for better loss calculation
+            logits, _ = model(x)      
+            B, T, V    = logits.shape
+            loss = F.cross_entropy(
+                logits.view(B*T, V),
+                y.view(B*T),
+                weight=class_weights
+            )
+
             optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
+            scheduler.step()
 
+            # Logging to check. Can comment out if loss looks ok
+            step += 1
             running_loss += loss.item()
-
-            if batch_idx % 100 == 0:
-                avg100 = running_loss / 100
-                print(f"Epoch {epoch+1}/{epochs}, batch {batch_idx}, avg loss over last 100 batches: {avg100:.4f}")
+            if step % 100 == 0:
+                avg = running_loss / 100
+                print(f"[{step:5d}/{total_steps:5d}] "
+                      f"Epoch {epoch}/{epochs}  avg loss: {avg:.4f}")
                 running_loss = 0.0
 
-    # ── save checkpoint ───────────────────────────────────
-    torch.save(model.state_dict(), 'ckpt_stock.pth')
-    print("Training complete, checkpoint saved to chpt_stock.pth")
+    # Save checkpoint so we can use it
+    torch.save(model.state_dict(), 'ckpt_stock_weighted.pth')
+    print("✅ Training complete, checkpoint saved to ckpt_stock_weighted.pth")
 
 if __name__ == '__main__':
-    main()
+    train_model()
 
 
 
 
-    # # Read arguments
+
+    # # Read arguments. Add this stuff in later
     # parser = argparse.ArgumentParser(description="Zero-shot stock forecasting with minGPT")
     # parser.add_argument('--tickers',   type=str,   default='AAPL,MSFT,GOOG,TSLA',
     #                     help='comma-separated list; last ticker held out for zero-shot eval')
