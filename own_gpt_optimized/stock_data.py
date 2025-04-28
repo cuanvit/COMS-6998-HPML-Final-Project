@@ -2,11 +2,11 @@ import yfinance as yf
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from .quantizer import Quantizer
+from .tokenizer import TikTokenTokenizer
 
 class StockDataset(Dataset):
-    def __init__(self, tickers, seq_len, split='train', clip=0.05, bins=256):
-        quant = Quantizer(num_bins=bins, clip=clip)
+    def __init__(self, tickers, seq_len, split='train'):
+        quant = TikTokenTokenizer()
         all_tokens = []
         for tk in tickers:
             df = yf.download(tk, period='2y', interval='1d', auto_adjust=False, progress=False)
