@@ -34,6 +34,7 @@ class Trainer:
         self.optimizer = None
         self.train_dataset = train_dataset
         self.callbacks = defaultdict(list)
+        self.scaler = torch.cuda.amp.GradScaler()
 
         # determine the device we'll train on
         if config.device == 'auto':
@@ -89,6 +90,22 @@ class Trainer:
             batch = [t.to(self.device) for t in batch]
             x, y = batch
 
+
+            # Mixed Precision (AMP) Training
+            # Uses torch.cuda.amp to automatically cast operations to float16 or bfloat16.
+            # This reduces memory usage by ~2x and speeds up math on GPUs like A100/H100.
+
+            with torch.cuda.amp.autocast():
+                logits, self.loss = model(x, y)
+
+            self.optimizer.zero_grad(set_to_none=True)
+            self.scaler.scale(self.loss).backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), config.grad_norm_clip)
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+
+            '''
+            # OLD CODE
             # forward the model
             logits, self.loss = model(x, y)
 
@@ -97,6 +114,10 @@ class Trainer:
             self.loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_norm_clip)
             self.optimizer.step()
+
+            '''
+
+            
 
             self.trigger_callbacks('on_batch_end')
             self.iter_num += 1
