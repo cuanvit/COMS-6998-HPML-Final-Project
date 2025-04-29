@@ -75,7 +75,7 @@ def train_model():
 
     # Model setup (no dropout as our loss wasn't good with dropout) 
     cfg = GPT.get_default_config()
-    cfg.model_type   = 'gpt-mini'   # 6-layer, 6-head, 192-dim
+    cfg.model_type   = 'gpt-mini'
     cfg.vocab_size   = bins
     cfg.block_size   = seq_len
     cfg.embd_pdrop   = 0.0
@@ -129,7 +129,7 @@ def train_model():
 
     # Save checkpoint so we can use it
     torch.save(model.state_dict(), 'ckpt_stock_weighted.pth')
-    print("✅ Training complete, checkpoint saved to ckpt_stock_weighted.pth")
+    print("Training complete, checkpoint saved to ckpt_stock_weighted.pth")
 
 if __name__ == '__main__':
     train_model()
