@@ -1,103 +1,60 @@
-
-import os
-import sys
-import json
-import random
-from ast import literal_eval
-
-import numpy as np
 import torch
+import torch.nn.functional as F
+from torch.amp import autocast
 
-# -----------------------------------------------------------------------------
 
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+def generate_text(model, tokenizer, prompt, max_length=50, top_k=0, device=None):
+    """
+    Generate text given a prompt. Supports greedy (top_k=0) or top-k sampling.
+    """
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
+    # Encode prompt to IDs
+    input_ids = tokenizer.encode(prompt).copy()  # get list of token IDs
 
-def setup_logging(config):
-    """ monotonous bookkeeping """
-    work_dir = config.system.work_dir
-    # create the work directory if it doesn't already exist
-    os.makedirs(work_dir, exist_ok=True)
-    # log the args (if any)
-    with open(os.path.join(work_dir, 'args.txt'), 'w') as f:
-        f.write(' '.join(sys.argv))
-    # log the config itself
-    with open(os.path.join(work_dir, 'config.json'), 'w') as f:
-        f.write(json.dumps(config.to_dict(), indent=4))
+    for _ in range(max_length):
+        input_tensor = torch.tensor([input_ids], dtype=torch.long, device=device)
+        with torch.no_grad():
+            with autocast(device_type='cuda', dtype=torch.float16):
+                logits = model(input_tensor)  # (1, seq_len, vocab)
+        logits = logits[0, -1, :]        # last token's logits
+        probs = F.softmax(logits, dim=-1)
 
-class CfgNode:
-    """ a lightweight configuration class inspired by yacs """
-    # TODO: convert to subclass from a dict like in yacs?
-    # TODO: implement freezing to prevent shooting of own foot
-    # TODO: additional existence/override checks when reading/writing params?
+        if top_k > 0:
+            # Top-k filtering
+            top_probs, top_idx = torch.topk(probs, top_k)
+            top_probs = top_probs / top_probs.sum()  # renormalize
+            next_id = top_idx[torch.multinomial(top_probs, 1)].item()
+        else:
+            # Greedy
+            next_id = torch.argmax(probs).item()
+        input_ids.append(next_id)
 
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+    text = tokenizer.decode(input_ids)
+    return text
 
-    def __str__(self):
-        return self._str_helper(0)
-
-    def _str_helper(self, indent):
-        """ need to have a helper to support nested indentation for pretty printing """
-        parts = []
-        for k, v in self.__dict__.items():
-            if isinstance(v, CfgNode):
-                parts.append("%s:\n" % k)
-                parts.append(v._str_helper(indent + 1))
-            else:
-                parts.append("%s: %s\n" % (k, v))
-        parts = [' ' * (indent * 4) + p for p in parts]
-        return "".join(parts)
-
-    def to_dict(self):
-        """ return a dict representation of the config """
-        return { k: v.to_dict() if isinstance(v, CfgNode) else v for k, v in self.__dict__.items() }
-
-    def merge_from_dict(self, d):
-        self.__dict__.update(d)
-
-    def merge_from_args(self, args):
-        """
-        update the configuration from a list of strings that is expected
-        to come from the command line, i.e. sys.argv[1:].
-
-        The arguments are expected to be in the form of `--arg=value`, and
-        the arg can use . to denote nested sub-attributes. Example:
-
-        --model.n_layer=10 --trainer.batch_size=32
-        """
-        for arg in args:
-
-            keyval = arg.split('=')
-            assert len(keyval) == 2, "expecting each override arg to be of form --arg=value, got %s" % arg
-            key, val = keyval # unpack
-
-            # first translate val into a python object
-            try:
-                val = literal_eval(val)
-                """
-                need some explanation here.
-                - if val is simply a string, literal_eval will throw a ValueError
-                - if val represents a thing (like an 3, 3.14, [1,2,3], False, None, etc.) it will get created
-                """
-            except ValueError:
-                pass
-
-            # find the appropriate object to insert the attribute into
-            assert key[:2] == '--'
-            key = key[2:] # strip the '--'
-            keys = key.split('.')
-            obj = self
-            for k in keys[:-1]:
-                obj = getattr(obj, k)
-            leaf_key = keys[-1]
-
-            # ensure that this attribute exists
-            assert hasattr(obj, leaf_key), f"{key} is not an attribute that exists in the config"
-
-            # overwrite the attribute
-            print("command line overwriting config attribute %s with %s" % (key, val))
-            setattr(obj, leaf_key, val)
+def calculate_perplexity(model, data_loader, pad_id, device=None):
+    """
+    Compute model perplexity on a DataLoader.
+    """
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
+    criterion = torch.nn.CrossEntropyLoss(ignore_index=pad_id, reduction='sum')
+    total_loss = 0.0
+    total_tokens = 0
+    with torch.no_grad():
+        for inputs, targets in data_loader:
+            inputs, targets = inputs.to(device), targets.to(device)
+            with autocast(device_type='cuda', dtype=torch.float16):
+                logits = model(inputs)
+                if isinstance(logits, tuple):
+                    logits = logits[0]
+                loss = criterion(logits.view(-1, logits.size(-1)), targets.view(-1))
+            total_loss += loss.item()
+            total_tokens += (targets != pad_id).sum().item()
+    perplexity = torch.exp(torch.tensor(total_loss / total_tokens))
+    return perplexity.item()
