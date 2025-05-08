@@ -112,6 +112,12 @@ The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library
    - Preprocess and tokenize data
    - Fine-tune using LoRA and optimizations
    - Save final adapter weights
+    
+    Following is the result of finetuning evaluated using training and validation loss:
+
+![alt text](images/llama_loss.png)
+
+
 
 4. If you are doing only inference first install unsloth.
 
