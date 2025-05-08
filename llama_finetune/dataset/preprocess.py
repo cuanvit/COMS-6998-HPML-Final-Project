@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 
-# 1) fetch the page with a real-browser User-Agent
+# fetch the page using  User-Agent
 url = "https://www.slickcharts.com/sp500"
 headers = {
     "User-Agent": (
@@ -13,17 +13,12 @@ headers = {
 resp = requests.get(url, headers=headers)
 resp.raise_for_status()
 
-# 2) parse out the first table (the S&P 500 constituents)
+# parse out the first table (the S&P 500 constituents)
 sp500 = pd.read_html(resp.text)[0]
 
-# 3) clean off any suffixes (e.g. “BRK.B” → “BRK”)
+# clean suffixes (e.g. “BRK.B” → “BRK”)
 sp500["Symbol"] = sp500["Symbol"].str.replace(r"\..*$", "", regex=True)
 
-# # 4) pull it into a Python list
-# symbol_list = sp500["Symbol"].tolist()
-
-# # 5) (optionally) print or return it
-# print(symbol_list)
 
 symbol_list = [f"{sym}.US" for sym in sp500["Symbol"].tolist()]
 
@@ -44,7 +39,7 @@ LIMIT      = 100
 OFFSET     = 0
 OUTPUT_FN  = "news_data.json"
 
-# 2) Fetch & accumulate
+#  fetch 
 all_articles = []
 for symbol in symbol_list:
     try:
@@ -67,9 +62,9 @@ for symbol in symbol_list:
         print(f"[UNEXPECTED] {symbol}: {err}")
 
     finally:
-        time.sleep(0.5)  # be kind to the API
+        time.sleep(0.5)  # be kind to the API haha
 
-# 3) Write out as one big JSON array
+# Write out as in one big JSON 
 with open(OUTPUT_FN, "w") as f:
     json.dump(all_articles, f, indent=2)
 

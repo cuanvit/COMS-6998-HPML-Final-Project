@@ -34,7 +34,7 @@ build/
 *.ckpt
 
 # Tokenizer/training artifacts
-*.json
+# *.json
 *.log
 *.out
 *.pkl
