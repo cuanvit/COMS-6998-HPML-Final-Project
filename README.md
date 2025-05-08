@@ -106,42 +106,42 @@ import torch
 from peft import prepare_model_for_kbit_training, PeftModel
 from unsloth import FastLanguageModel
 
-# Load the same 4-bit base + tokenizer we fine-tuned on
+
 base, tokenizer = FastLanguageModel.from_pretrained(
-    model_name     = "unsloth/Llama-3.2-1B-bnb-4bit",  # base
+    model_name     = "unsloth/Llama-3.2-1B-bnb-4bit",  
     max_seq_length = 128,
-    dtype          = None,                   # or None for auto
+    dtype          = None,                   
     load_in_4bit   = True,
     device_map     = "auto",
 )
 
-# ensure pad/eos tokens are set
+
 tokenizer.pad_token = tokenizer.eos_token
 base.config.pad_token_id = tokenizer.pad_token_id
 base.config.use_cache      = True
 
-# Patch for QLoRA / k-bit adapters
+
 base = prepare_model_for_kbit_training(base)
 
-# Load your fine-tuned LoRA adapters
+
 #-----THIS IS WHERE YOU PUT save_path AS THE FOLDER WHERE YOU SAVED THE WEIGHTS----#
 model = PeftModel.from_pretrained(
     base,
     save_path,     # folder where we saved adapters + tokenizer
-    device_map="auto",          # shard onto GPU automatically
+    device_map="auto",          
 )
 
-# model.eval()
+
 FastLanguageModel.for_inference(model)
 
-# Inference helper
+
 def answer(prompt: str,
            max_new_tokens: int = 128,
            temperature: float    = 0.2,
            top_p: float          = 0.7,
            repetition_penalty: float = 1.2,
            no_repeat_ngram_size: int = 3):
-    # tokenize
+    
     inputs = tokenizer(
         prompt,
         return_tensors="pt",
@@ -151,7 +151,7 @@ def answer(prompt: str,
 
     input_ids = inputs["input_ids"]
 
-    # generate
+    
     outputs = model.generate(
         **inputs,
         max_new_tokens       = max_new_tokens,
@@ -165,7 +165,7 @@ def answer(prompt: str,
         early_stopping       = True,
     )
 
-    # strip off prompt‐tokens and decode only the new ones
+    
     gen_ids = outputs[0][ input_ids.shape[-1] : ]
     return tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
 
