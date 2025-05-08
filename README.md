@@ -5,7 +5,7 @@ This project develops and benchmarks three large language models specialized for
 
 1. A **custom GPT model** built from scratch using PyTorch and trained on transformed quantitative financial data.
 2. A **custom optimzed GPT model** that optimizes the above model.
-3. A **fine-tuned Meta LLaMA 3.2-3b model**, adapted for financial tasks using LoRA/qLoRA and other HPML (High-Performance Machine Learning) optimizations.
+3. A **fine-tuned Meta LLaMA 3.2-1B 4bit quantized model**, adapted for financial tasks using LoRA/qLoRA and other HPML (High-Performance Machine Learning) optimizations.
 
 ## Project Components
 
