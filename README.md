@@ -35,16 +35,22 @@ This model has to be trained in the same way as the previous model
 **`data_utils.py`:** contains the code for the tokeizer and loading the dataset for the model.
 **`finance_gpt_train.ipynb`:** for training the model on google collab.
 
-The data is in the data folder
+### Dataset
 
+**`llama_finetune/dataset/`** is the directory for preprocessing the dataset and dumping the corpus. We have scraped a list of all the S&P500 companies sorted by their market cap, and used the EODHD API to extract financial news on each of these companies. Eventually we ended up with **9285** articles.
+
+Running 
+
+```bash 
+python preprocess.py
+```
+will extract all the news (you need an API KEY)
 
 ---
 
 ### LLaMA Fine-Tuning for Financial Domain Adaptation
 
-**`llama_finetune`**
-
-This folder contains the code and output artifacts for **fine-tuning Meta's LLaMA 3.2-3B** model on financial news data using **LoRA/qLoRA** and high-performance ML techniques.
+**`llama_finetune/`** folder contains the code and output artifacts for **fine-tuning Meta's LLaMA 3.2-1B 4bit quantized** model on financial news data using **LoRA/qLoRA** and high-performance ML techniques.
 
 The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library to maximize throughput and minimize GPU memory usage.
 
@@ -52,11 +58,11 @@ The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library
 
 #### Contents
 
-- **`adapter_weights/`**  
+- **`llama_finetune/adapter_weights/`**  
   Contains LoRA adapter checkpoints saved after fine-tuning. These can be loaded for inference without modifying the base model.
 
-- **`finetuning/llama_finance_finetune.ipynb`**  
-  The main notebook used for fine-tuning LLaMA 3.2-3B on an A100 GPU. This notebook includes:
+- **`llama_finetune/finetuning/llama_finance_finetune.ipynb`**  
+  The main notebook used for fine-tuning LLaMA 3.2-1B on an A100 GPU. This notebook includes:
   - Loading the 4-bit quantized base model
   - Applying LoRA adapters (rank = 16, alpha = 16)
   - Tokenizing and packing a finance news corpus
@@ -80,10 +86,10 @@ The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library
   Uses PyTorch 2.0's graph compiler for faster training.
 
 - **Packing:**  
-  Packs multiple short sequences into fixed-length 128-token blocks for better GPU utilization.
+  Packs multiple short sequences into fixed-length 512-token blocks for better GPU utilization. Although currently Hugging face's packing is buggy so they have disabled it.
 
 - **KV Cache Enabled:**  
-  Speeds up inference by reusing keys and values across tokens. Unsloth uses this by default
+  Speeds up inference by reusing keys and values across tokens. Unsloth uses this by default.
 
 ---
 
@@ -91,15 +97,31 @@ The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library
 
 1. **Upload the **`llama_finetune/finetuning/llama_finance_finetune.ipynb`** notebook to Colab** or run it in your local Jupyter environment with access to an A100 or compatible GPU. The colab file markdown has all the necessary instructions to run the file
 
-2. Make sure `finance_corpus.txt` (cleaned financial news) is available in the dataset directory.
+2. Make sure **`finance_corpus.txt`** (cleaned financial news) is available in the dataset directory.
 
-3. Run all cells in `llama_finance_finetune.ipynb` (using colab preferably unless you have access to NVIDIA GPUs locally) to:
+3. Run all cells in **`llama_finance_finetune.ipynb`** (using colab preferably unless you have access to NVIDIA GPUs locally) to:
    - Load model and tokenizer
    - Preprocess and tokenize data
    - Fine-tune using LoRA and optimizations
    - Save final adapter weights
 
-4. For inference, use the saved LoRA weights like this:
+4. If you are doing only inference first install unsloth.
+
+```python
+%%capture
+import os
+if "COLAB_" not in "".join(os.environ.keys()):
+    !pip install unsloth
+else:
+    # Do this only in Colab notebooks! Otherwise use pip install unsloth
+    !pip install --no-deps bitsandbytes accelerate xformers==0.0.29.post3 peft trl==0.15.2 triton cut_cross_entropy unsloth_zoo
+    !pip install sentencepiece protobuf datasets huggingface_hub hf_transfer
+    !pip install --no-deps unsloth
+
+```
+
+
+5. Then use the saved LoRA weights like this:
 
 ```python
 import torch
