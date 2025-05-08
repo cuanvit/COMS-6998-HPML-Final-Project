@@ -34,10 +34,11 @@ build/
 *.ckpt
 
 # Tokenizer/training artifacts
-*.json
+# *.json
 *.log
 *.out
 *.pkl
 
 # Hugging Face cache
 ~/.cache/huggingface/
+
