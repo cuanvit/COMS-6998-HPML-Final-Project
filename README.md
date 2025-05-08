@@ -37,11 +37,16 @@ This model has to be trained in the same way as the previous model
 
 The data is in the data folder
 
+
+---
+
 ### LLaMA Fine-Tuning for Financial Domain Adaptation
+
+**`llama_finetune`**
 
 This folder contains the code and output artifacts for **fine-tuning Meta's LLaMA 3.2-3B** model on financial news data using **LoRA/qLoRA** and high-performance ML techniques.
 
-The fine-tuning leverages the [Unsloth](https://github.com/unslothai/unsloth) library to maximize throughput and minimize GPU memory usage.
+The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library to maximize throughput and minimize GPU memory usage.
 
 ---
 
@@ -50,7 +55,7 @@ The fine-tuning leverages the [Unsloth](https://github.com/unslothai/unsloth) li
 - **`adapter_weights/`**  
   Contains LoRA adapter checkpoints saved after fine-tuning. These can be loaded for inference without modifying the base model.
 
-- **`unsloth_a100_bs32_final.ipynb`**  
+- **`finetuning/llama_finance_finetune.ipynb`**  
   The main notebook used for fine-tuning LLaMA 3.2-3B on an A100 GPU. This notebook includes:
   - Loading the 4-bit quantized base model
   - Applying LoRA adapters (rank = 16, alpha = 16)
@@ -78,50 +83,91 @@ The fine-tuning leverages the [Unsloth](https://github.com/unslothai/unsloth) li
   Packs multiple short sequences into fixed-length 128-token blocks for better GPU utilization.
 
 - **KV Cache Enabled:**  
-  Speeds up inference by reusing keys and values across tokens.
+  Speeds up inference by reusing keys and values across tokens. Unsloth uses this by default
 
 ---
 
 #### How to Use
 
-1. **Upload the notebook to Colab** or run it in your local Jupyter environment with access to an A100 or compatible GPU.
+1. **Upload the **`llama_finetune/finetuning/llama_finance_finetune.ipynb`** notebook to Colab** or run it in your local Jupyter environment with access to an A100 or compatible GPU. The colab file markdown has all the necessary instructions to run the file
 
 2. Make sure `finance_corpus.txt` (cleaned financial news) is available in the dataset directory.
 
-3. Run all cells in `unsloth_a100_bs32_final.ipynb` to:
+3. Run all cells in `llama_finance_finetune.ipynb` (using colab preferably unless you have access to NVIDIA GPUs locally) to:
    - Load model and tokenizer
    - Preprocess and tokenize data
    - Fine-tune using LoRA and optimizations
-   - Save final adapter weights to `adapter_weights/`
+   - Save final adapter weights
 
 4. For inference, use the saved LoRA weights like this:
 
 ```python
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from peft import PeftModel
+import torch
+from peft import prepare_model_for_kbit_training, PeftModel
+from unsloth import FastLanguageModel
 
-base = AutoModelForCausalLM.from_pretrained(
-    "unsloth/Llama-3.2-3B-bnb-4bit", 
-    device_map="auto", 
-    load_in_4bit=True, 
-    torch_dtype="auto"
+# Load the same 4-bit base + tokenizer we fine-tuned on
+base, tokenizer = FastLanguageModel.from_pretrained(
+    model_name     = "unsloth/Llama-3.2-1B-bnb-4bit",  # base
+    max_seq_length = 128,
+    dtype          = None,                   # or None for auto
+    load_in_4bit   = True,
+    device_map     = "auto",
 )
 
+# ensure pad/eos tokens are set
+tokenizer.pad_token = tokenizer.eos_token
+base.config.pad_token_id = tokenizer.pad_token_id
+base.config.use_cache      = True
+
+# Patch for QLoRA / k-bit adapters
+base = prepare_model_for_kbit_training(base)
+
+# Load your fine-tuned LoRA adapters
+#-----THIS IS WHERE YOU PUT save_path AS THE FOLDER WHERE YOU SAVED THE WEIGHTS----#
 model = PeftModel.from_pretrained(
     base,
-    "llama_finetune/adapter_weights/unsloth_a100_bs32_final"
+    save_path,     # folder where we saved adapters + tokenizer
+    device_map="auto",          # shard onto GPU automatically
 )
 
-tokenizer = AutoTokenizer.from_pretrained(
-    "llama_finetune/adapter_weights/unsloth_a100_bs32_final"
-)
+# model.eval()
+FastLanguageModel.for_inference(model)
 
-model.eval()
+# Inference helper
+def answer(prompt: str,
+           max_new_tokens: int = 128,
+           temperature: float    = 0.2,
+           top_p: float          = 0.7,
+           repetition_penalty: float = 1.2,
+           no_repeat_ngram_size: int = 3):
+    # tokenize
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=512
+    ).to(model.device)
 
-def answer(prompt):
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    output = model.generate(**inputs, max_new_tokens=64)
-    return tokenizer.decode(output[0][inputs.input_ids.shape[-1]:], skip_special_tokens=True)
+    input_ids = inputs["input_ids"]
+
+    # generate
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens       = max_new_tokens,
+        temperature          = temperature,
+        top_p                = top_p,
+        do_sample            = True,
+        repetition_penalty   = repetition_penalty,
+        no_repeat_ngram_size = no_repeat_ngram_size,
+        eos_token_id         = tokenizer.eos_token_id,
+        pad_token_id         = tokenizer.pad_token_id,
+        early_stopping       = True,
+    )
+
+    # strip off prompt‐tokens and decode only the new ones
+    gen_ids = outputs[0][ input_ids.shape[-1] : ]
+    return tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
 
 ```
 
