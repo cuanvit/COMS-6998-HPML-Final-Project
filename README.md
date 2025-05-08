@@ -9,6 +9,8 @@ This project develops and benchmarks three large language models specialized for
 
 ## Project Components
 
+---
+
 ### From Scratch GPT
 
 The **`own_gpt`** folder:
