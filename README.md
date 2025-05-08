@@ -18,26 +18,38 @@ The **`own_gpt`** folder:
 This contains the code for the custom gpt model.
 The files in this folder have to be uploaded to google drive and then run the jupyter notebok to train the model. 
 The path has to be changed to the google drive path.
-
+---
+#### Contents
 **`model.py`:** contians the code for the gpt model.
 **`utils.py`:** contains the code for to generate text.
 **`data_utils.py`:** contains the code for the tokeizer and loading the dataset for the model.
 **`finance_gpt_train.ipynb`:** for training the model on google collab.
 
 The data is in the data folder
+---
+
+#### How to Use
+
+1. **Upload the **`own_gpt`** folder to Google drive** and run the **`finance_gpt_train.py`** on google colab with access to an A100 or compatible GPU. The colab file markdown has all the necessary instructions to run the file
+
+2. Make sure **`finance_corpus.txt`** (cleaned financial news) is available in the dataset directory.
+
+3. Makse sure the that path is set correctly so the notbook is able to access the other files. 
+
+3. Run all cells in **'finance_gpt_train.py'** to:
+   - Load model and tokenizer
+   - Preprocess and tokenize data
+   - Train the model
+   - Save the model
+   - Give the model a prompt
 
 
+---
 The **`own_gpt_optimized`** folder:
 
 This contains the code for the custom optimized gpt model.
-This model has to be trained in the same way as the previous model
-
-**`model.py`:** contians the code for the gpt model.
-**`utils.py`:** contains the code for to generate text.
-**`data_utils.py`:** contains the code for the tokeizer and loading the dataset for the model.
-**`finance_gpt_train.ipynb`:** for training the model on google collab.
-
-
+The contents of this model are similar to thet of own_gpt.
+To run this model follow the same instructions as **`own_gpt`** but use the files in the **`own_gpt_optimized`** folder.
 
 ---
 
