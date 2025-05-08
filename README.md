@@ -18,7 +18,9 @@ The **`own_gpt`** folder:
 This contains the code for the custom gpt model.
 The files in this folder have to be uploaded to google drive and then run the jupyter notebok to train the model. 
 The path has to be changed to the google drive path.
+
 ---
+
 #### Contents
 **`model.py`:** contians the code for the gpt model.
 **`utils.py`:** contains the code for to generate text.
@@ -26,6 +28,7 @@ The path has to be changed to the google drive path.
 **`finance_gpt_train.ipynb`:** for training the model on google collab.
 
 The data is in the data folder
+
 ---
 
 #### How to Use
