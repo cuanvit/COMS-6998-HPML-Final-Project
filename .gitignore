@@ -41,3 +41,5 @@ build/
 
 # Hugging Face cache
 ~/.cache/huggingface/
+
+echo "llama_finetune/dataset/news_data.json"
