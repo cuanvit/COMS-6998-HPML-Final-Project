@@ -123,7 +123,7 @@ def answer(prompt):
     output = model.generate(**inputs, max_new_tokens=64)
     return tokenizer.decode(output[0][inputs.input_ids.shape[-1]:], skip_special_tokens=True)
 
-
+```
 
 We evaluate the impact of optimization techniques like LoRA, qLoRA, Torch.compile, mixed precision training, and KV cache improvements on model efficiency, latency, and performance.
 
