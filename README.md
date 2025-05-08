@@ -35,16 +35,7 @@ This model has to be trained in the same way as the previous model
 **`data_utils.py`:** contains the code for the tokeizer and loading the dataset for the model.
 **`finance_gpt_train.ipynb`:** for training the model on google collab.
 
-### Dataset
 
-**`llama_finetune/dataset/`** is the directory for preprocessing the dataset and dumping the corpus. We have scraped a list of all the S&P500 companies sorted by their market cap, and used the EODHD API to extract financial news on each of these companies. Eventually we ended up with **9285** articles.
-
-Running 
-
-```bash 
-python preprocess.py
-```
-will extract all the news (you need an API KEY)
 
 ---
 
@@ -194,4 +185,17 @@ def answer(prompt: str,
 ```
 
 We evaluate the impact of optimization techniques like LoRA, qLoRA, Torch.compile, mixed precision training, and KV cache improvements on model efficiency, latency, and performance.
+
+---
+
+### Dataset
+
+**`llama_finetune/dataset/`** is the directory for preprocessing the dataset and dumping the corpus. We have scraped a list of all the S&P500 companies sorted by their market cap, and used the EODHD API to extract financial news on each of these companies. Eventually we ended up with **9285** articles.
+
+Running 
+
+```bash 
+python preprocess.py
+```
+will extract all the news (you need an API KEY)
 
