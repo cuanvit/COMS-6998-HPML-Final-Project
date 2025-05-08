@@ -36,7 +36,7 @@ The data is in the data folder
 
 3. Makse sure the that path is set correctly so the notbook is able to access the other files. 
 
-3. Run all cells in **'finance_gpt_train.py'** to:
+3. Run all cells in **`finance_gpt_train.py`** to:
    - Load model and tokenizer
    - Preprocess and tokenize data
    - Train the model
