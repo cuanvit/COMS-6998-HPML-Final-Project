@@ -1,4 +1,3 @@
-# data_utils.py
 import torch
 from torch.utils.data import Dataset, random_split
 from tokenizers import Tokenizer
@@ -60,8 +59,6 @@ def load_data(file_paths, tokenizer, block_size=256, train_frac=0.9):
     n_val = n - n_train
     train_dataset, val_dataset = random_split(dataset, [n_train, n_val])
     return train_dataset, val_dataset
-
-# data_utils.py (excerpt)
 
 def train_tokenizer(file_paths, vocab_size=10000, save_path="tokenizer.json"):
     """
