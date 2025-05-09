@@ -3,7 +3,7 @@
 
 This project develops and benchmarks three large language models specialized for financial tasks:
 
-1. A **custom GPT model** built from scratch using PyTorch and trained on transformed quantitative financial data.
+1. A **custom GPT model** built from scratch using PyTorch and trained on financial news data.
 2. A **custom optimzed GPT model** that optimizes the above model.
 3. A **fine-tuned Meta LLaMA 3.2-1B 4bit quantized model**, adapted for financial tasks using LoRA/qLoRA and other HPML (High-Performance Machine Learning) optimizations.
 
@@ -76,6 +76,9 @@ The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library
   - Tokenizing and packing a finance news corpus
   - Running training for multiple epochs
   - Logging throughput, loss, and memory usage
+
+- **`llama_finetune/notebooks`**
+    All the notebooks used to run experiments with different batch sizes/parameters for Lora/mized precision 
 
 ---
 
