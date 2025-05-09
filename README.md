@@ -54,9 +54,11 @@ This contains the code for the custom optimized gpt model.
 The contents of this model are similar to thet of own_gpt.
 To run this model follow the same instructions as **`own_gpt`** but use the files in the **`own_gpt_optimized`** folder.
 
----
+Following is a chart that shows training time for the non optimized version vs. the optimized version
 
 ![alt text](images/custom_gpt.png)
+
+---
 
 ### LLaMA Fine-Tuning for Financial Domain Adaptation
 
