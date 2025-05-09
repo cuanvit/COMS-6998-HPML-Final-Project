@@ -80,6 +80,9 @@ The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library
 - **`llama_finetune/notebooks`**
     All the notebooks used to run experiments with different batch sizes/parameters for Lora/mized precision 
 
+- **`llama_finetune/dataset`**
+    Contains the dataset and the preprocessing files including the JSON dump
+
 ---
 
 #### Key Fine-Tuning Optimizations
