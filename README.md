@@ -56,6 +56,8 @@ To run this model follow the same instructions as **`own_gpt`** but use the file
 
 ---
 
+![alt text](images/custom_gpt.png)
+
 ### LLaMA Fine-Tuning for Financial Domain Adaptation
 
 **`llama_finetune/`** folder contains the code and output artifacts for **fine-tuning Meta's LLaMA 3.2-1B 4bit quantized** model on financial news data using **LoRA/qLoRA** and high-performance ML techniques.
