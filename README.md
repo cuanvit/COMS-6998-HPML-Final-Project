@@ -111,7 +111,17 @@ The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library
 
 ---
 
-#### How to Use
+#### How To Use the Custom GPT Model
+
+To both train and evaluate using the custom GPT model, just run the cells within the finance_gpt_train.ipynb. Please keep in mind that the paths within the Jupyter Notebook pertain ot the path we used, so be sure to change them to fit your directory paths. The primary cells you'd need to change are:
+1. The mounting if needed (we used Google Colab) (First cell)
+2. sys.path.append to ensure you are within the own_gpt_optimized directory (Second cell)
+3. The path for the data files (Found directly after the imports)
+4. Where the model will be saved (found near the end)
+5. Where to load the state if necessary (Found near the end)
+To provide different prompts, just change the prompt variable in the last slide.
+
+#### How to Use the LLaMA model
 
 1. **Upload the **`llama_finetune/finetuning/llama_finance_finetune.ipynb`** notebook to Colab** or run it in your local Jupyter environment with access to an A100 or compatible GPU. The colab file markdown has all the necessary instructions to run the file
 
