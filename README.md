@@ -108,6 +108,7 @@ To train model from scratch and evaluate the model (both of them are done togeth
 
 ## 5. Notes (Project Components)
 
+This also contains how to use instructions as this was most of the stuff we wrote before the README instrucstions changed.
 
 ---
 
