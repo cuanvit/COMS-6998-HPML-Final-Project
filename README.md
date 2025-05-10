@@ -104,7 +104,8 @@ To train model from scratch and evaluate the model (both of them are done togeth
 
 
 
-## Project Components
+## 5. Notes (Project Components)
+
 
 ---
 
