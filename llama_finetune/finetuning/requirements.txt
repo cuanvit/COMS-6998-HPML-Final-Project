@@ -1,0 +1,10 @@
+# Core DL framework (match your CUDA build)
+torch==2.6.0+cu124
+torchvision==0.15.1+cu124
+torchaudio==2.6.0+cu124
+
+# Transformers itself (pinned to the version Unsloth was built against)
+transformers==4.51.3
+
+# The top-level wrapper
+unsloth==2025.4.7
