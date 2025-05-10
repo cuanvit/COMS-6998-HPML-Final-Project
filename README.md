@@ -60,6 +60,12 @@ Llama 3.2 1b (4 bit quantized) finetuned:
 
 ### A. Requirements
 
+For the finetuning of LLama Model run this in **`llama_finetune/finetuning/`**
+
+```bash
+pip install -r requirements.txt
+```
+
 
 ### B. How To Use the Custom GPT Model
 
