@@ -32,12 +32,13 @@ Custom GPT:
 
 | Metric               | Value       |
 |----------------------|-------------|
-| Final Top-1 Accuracy | XX.XX%      |
+| Final Validation Loss| 2,2515      |
+| Perplexity           | 9.5025      |
 | Inference Latency    | XX.XX ms    |
 | Model Size           | XX MB       |
 | Peak Memory Use      | XX MB       |
-| Training Time/Epoch  | XX s        |
-| Device               | A100, Jetson Nano, M1 Pro, etc. |
+| Training Time/Epoch  | 84.24 s     |
+| Device               | A100        |
 
 
 
