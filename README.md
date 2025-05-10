@@ -60,11 +60,14 @@ Llama 3.2 1b (4 bit quantized) finetuned:
 
 ### A. Requirements
 
-For the finetuning of LLama Model run this in **`llama_finetune/finetuning/`**
+For the finetuning of LLama Model run this in **`llama_finetune/finetuning/`**. You wont need to install the dependencies if you are running the notebooks on Google Colab.
 
 ```bash
 pip install -r requirements.txt
+
 ```
+
+It is recommended that you run this on Google Colab, as unsloth dependencies installed on local machine havent been tested. We ourselves have written the documentation to be run on Colab. 
 
 
 ### B. How To Use the Custom GPT Model
@@ -111,6 +114,8 @@ else:
     !pip install --no-deps unsloth
 
 ```
+
+NOTE: The **`llama_finetune/finetuning/inference.ipynb`** notebook does take care of this so shouldnt be worried about much.
 
 
 5. Then use the saved LoRA weights like this:
