@@ -80,7 +80,7 @@ To both train and evaluate using the custom GPT model, just run the cells within
 5. Where to load the state if necessary (Found near the end)
 To provide different prompts, just change the prompt variable in the last slide.
 
-### C. How to Use the LLaMA model
+### C. How to Use the LLaMA model 
 
 To train model from scratch and evaluate the model (both of them are done together since its a jupyter script):
 
@@ -98,97 +98,11 @@ To train model from scratch and evaluate the model (both of them are done togeth
 
 ![alt text](images/llama_loss.png)
 
+4. If you are running only inference run the **`llama_finetune/finetuning/inference.ipynb`** notebook. In that notebook make sure you set the path of the adapter weights to **`llama_finetune/adapter_weights/copy_unsloth_a100_8`**. When running in colab, download this directory and then set this directory as the corresponding colab path.
 
 
-4. If you are doing only inference first install unsloth.
-
-```python
-%%capture
-import os
-if "COLAB_" not in "".join(os.environ.keys()):
-    !pip install unsloth
-else:
-    # Do this only in Colab notebooks! Otherwise use pip install unsloth
-    !pip install --no-deps bitsandbytes accelerate xformers==0.0.29.post3 peft trl==0.15.2 triton cut_cross_entropy unsloth_zoo
-    !pip install sentencepiece protobuf datasets huggingface_hub hf_transfer
-    !pip install --no-deps unsloth
-
-```
-
-NOTE: The **`llama_finetune/finetuning/inference.ipynb`** notebook does take care of this so shouldnt be worried about much.
 
 
-5. Then use the saved LoRA weights like this:
-
-```python
-import torch
-from peft import prepare_model_for_kbit_training, PeftModel
-from unsloth import FastLanguageModel
-
-
-base, tokenizer = FastLanguageModel.from_pretrained(
-    model_name     = "unsloth/Llama-3.2-1B-bnb-4bit",  
-    max_seq_length = 128,
-    dtype          = None,                   
-    load_in_4bit   = True,
-    device_map     = "auto",
-)
-
-
-tokenizer.pad_token = tokenizer.eos_token
-base.config.pad_token_id = tokenizer.pad_token_id
-base.config.use_cache      = True
-
-
-base = prepare_model_for_kbit_training(base)
-
-
-#-----THIS IS WHERE YOU PUT save_path AS THE FOLDER WHERE YOU SAVED THE WEIGHTS----#
-model = PeftModel.from_pretrained(
-    base,
-    save_path,     # folder where we saved adapters + tokenizer
-    device_map="auto",          
-)
-
-
-FastLanguageModel.for_inference(model)
-
-
-def answer(prompt: str,
-           max_new_tokens: int = 128,
-           temperature: float    = 0.2,
-           top_p: float          = 0.7,
-           repetition_penalty: float = 1.2,
-           no_repeat_ngram_size: int = 3):
-    
-    inputs = tokenizer(
-        prompt,
-        return_tensors="pt",
-        truncation=True,
-        max_length=512
-    ).to(model.device)
-
-    input_ids = inputs["input_ids"]
-
-    
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens       = max_new_tokens,
-        temperature          = temperature,
-        top_p                = top_p,
-        do_sample            = True,
-        repetition_penalty   = repetition_penalty,
-        no_repeat_ngram_size = no_repeat_ngram_size,
-        eos_token_id         = tokenizer.eos_token_id,
-        pad_token_id         = tokenizer.pad_token_id,
-        early_stopping       = True,
-    )
-
-    
-    gen_ids = outputs[0][ input_ids.shape[-1] : ]
-    return tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
-
-```
 
 ## Project Components
 
@@ -294,6 +208,95 @@ The fine-tuning uses the [Unsloth](https://github.com/unslothai/unsloth) library
 
 ---
 
+1. If you are doing only inference first install unsloth.
+
+```python
+%%capture
+import os
+if "COLAB_" not in "".join(os.environ.keys()):
+    !pip install unsloth
+else:
+    # Do this only in Colab notebooks! Otherwise use pip install unsloth
+    !pip install --no-deps bitsandbytes accelerate xformers==0.0.29.post3 peft trl==0.15.2 triton cut_cross_entropy unsloth_zoo
+    !pip install sentencepiece protobuf datasets huggingface_hub hf_transfer
+    !pip install --no-deps unsloth
+
+```
+
+NOTE: The **`llama_finetune/finetuning/inference.ipynb`** notebook does take care of this so shouldnt be worried about much.
+
+
+2. Then use the saved LoRA weights like this:
+
+```python
+import torch
+from peft import prepare_model_for_kbit_training, PeftModel
+from unsloth import FastLanguageModel
+
+
+base, tokenizer = FastLanguageModel.from_pretrained(
+    model_name     = "unsloth/Llama-3.2-1B-bnb-4bit",  
+    max_seq_length = 128,
+    dtype          = None,                   
+    load_in_4bit   = True,
+    device_map     = "auto",
+)
+
+
+tokenizer.pad_token = tokenizer.eos_token
+base.config.pad_token_id = tokenizer.pad_token_id
+base.config.use_cache      = True
+
+
+base = prepare_model_for_kbit_training(base)
+
+
+#-----THIS IS WHERE YOU PUT save_path AS THE FOLDER WHERE YOU SAVED THE WEIGHTS----#
+model = PeftModel.from_pretrained(
+    base,
+    save_path,     # folder where we saved adapters + tokenizer
+    device_map="auto",          
+)
+
+
+FastLanguageModel.for_inference(model)
+
+
+def answer(prompt: str,
+           max_new_tokens: int = 128,
+           temperature: float    = 0.2,
+           top_p: float          = 0.7,
+           repetition_penalty: float = 1.2,
+           no_repeat_ngram_size: int = 3):
+    
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=512
+    ).to(model.device)
+
+    input_ids = inputs["input_ids"]
+
+    
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens       = max_new_tokens,
+        temperature          = temperature,
+        top_p                = top_p,
+        do_sample            = True,
+        repetition_penalty   = repetition_penalty,
+        no_repeat_ngram_size = no_repeat_ngram_size,
+        eos_token_id         = tokenizer.eos_token_id,
+        pad_token_id         = tokenizer.pad_token_id,
+        early_stopping       = True,
+    )
+
+    
+    gen_ids = outputs[0][ input_ids.shape[-1] : ]
+    return tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
+
+```
 
 
 We evaluate the impact of optimization techniques like LoRA, qLoRA, Torch.compile, mixed precision training, and KV cache improvements on model efficiency, latency, and performance.
