@@ -32,8 +32,8 @@ Custom GPT:
 
 | Metric               | Value       |
 |----------------------|-------------|
-| Final Validation Loss| 2,2515      |
-| Perplexity           | 9.5025      |
+| Final Validation Loss| 2.25      |
+| Perplexity           | 9.50      |
 | Inference Latency    | XX.XX ms    |
 | Model Size           | XX MB       |
 | Peak Memory Use      | XX MB       |
