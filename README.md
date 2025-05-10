@@ -45,12 +45,12 @@ Llama 3.2 1b (4 bit quantized) finetuned:
 
 | Metric               | Value       |
 |----------------------|-------------|
-| Final Eval Loss      | XX.XX%      |
-| Inference Latency    | XX.XX ms    |
+| Final Eval Loss      | 1.84        |
+| Inference Latency    | 3860.18 ms  |
 | Model Size           | XX MB       |
-| Peak Memory Use      | XX MB       |
-| Training Time/Epoch  | XX s        |
-| Device               | A100, Jetson Nano, M1 Pro, etc. |
+| Peak Memory Use      | 3.557 GB    |
+| Training Time/Epoch  | 242.5 s     |
+| Device               | A100        |
 
 
 
