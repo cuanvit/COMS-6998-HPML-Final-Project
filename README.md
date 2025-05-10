@@ -34,11 +34,11 @@ Custom GPT:
 
 | Metric               | Value       |
 |----------------------|-------------|
-| Final Validation Loss| 2.25      |
-| Perplexity           | 9.50      |
-| Inference Latency    | XX.XX ms    |
-| Model Size           | XX MB       |
-| Peak Memory Use      | XX MB       |
+| Final Validation Loss| 2.25        |
+| Perplexity           | 9.50        |
+| Inference Latency    | 1421.40 ms  |
+| Model Size           | 294.70 MB   |
+| Peak Memory Use      | 1.262 GB    |
 | Training Time/Epoch  | 84.24 s     |
 | Device               | A100        |
 
