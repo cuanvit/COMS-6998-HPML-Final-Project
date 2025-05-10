@@ -24,6 +24,8 @@ This project develops and benchmarks three large language models specialized for
 
 ## 2. Model Description
 
+For fine-tuning we build on Meta’s LLaMA 3.2 1B (4-bit quantized) model.
+
 
 
 ## 3. Final Results Summary
