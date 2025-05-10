@@ -205,7 +205,7 @@ The data is in the data folder
 
 1. **Upload the **`own_gpt`** folder to Google drive** and run the **`finance_gpt_train.py`** on google colab with access to an A100 or compatible GPU. The colab file markdown has all the necessary instructions to run the file
 
-2. Make sure **`finance_corpus.txt`** (cleaned financial news) is available in the dataset directory.
+2. Make sure **`finance_corpus.txt`** (cleaned financial news) is available in the dataset directory, and all directories are set correctly in the Jupyter Notebook.
 
 3. Makse sure the that path is set correctly so the notbook is able to access the other files. 
 
