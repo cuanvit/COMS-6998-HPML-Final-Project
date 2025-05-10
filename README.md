@@ -82,6 +82,21 @@ To both train and evaluate using the custom GPT model, just run the cells within
 5. Where to load the state if necessary (Found near the end)
 To provide different prompts, just change the prompt variable in the last slide.
 
+
+More specifically, after changing the path variables:
+1. **Upload the **`own_gpt`** folder to Google drive** and run the **`finance_gpt_train.py`** on google colab with access to an A100 or compatible GPU. The colab file markdown has all the necessary instructions to run the file
+
+2. Make sure **`finance_corpus.txt`** (cleaned financial news) is available in the dataset directory, and all directories are set correctly in the Jupyter Notebook.
+
+3. Makse sure the that path is set correctly so the notbook is able to access the other files. 
+
+3. Run all cells in **`finance_gpt_train.py`** to:
+   - Load model and tokenizer
+   - Preprocess and tokenize data
+   - Train the model
+   - Save the model
+   - Give the model a prompt
+
 ### C. How to Use the LLaMA model 
 
 To train model from scratch and evaluate the model (both of them are done together since its a jupyter script):
@@ -101,9 +116,6 @@ To train model from scratch and evaluate the model (both of them are done togeth
 ![alt text](images/llama_loss.png)
 
 4. If you are running only inference run the **`llama_finetune/finetuning/inference.ipynb`** notebook. In that notebook make sure you set the path of the adapter weights to **`llama_finetune/adapter_weights/copy_unsloth_a100_8`**. When running in colab, download this directory and then set this directory as the corresponding colab path.
-
-
-
 
 
 ## 5. Notes (Project Components)
@@ -131,22 +143,6 @@ The path has to be changed to the google drive path.
 The data is in the data folder
 
 ---
-
-#### How to Use
-
-1. **Upload the **`own_gpt`** folder to Google drive** and run the **`finance_gpt_train.py`** on google colab with access to an A100 or compatible GPU. The colab file markdown has all the necessary instructions to run the file
-
-2. Make sure **`finance_corpus.txt`** (cleaned financial news) is available in the dataset directory, and all directories are set correctly in the Jupyter Notebook.
-
-3. Makse sure the that path is set correctly so the notbook is able to access the other files. 
-
-3. Run all cells in **`finance_gpt_train.py`** to:
-   - Load model and tokenizer
-   - Preprocess and tokenize data
-   - Train the model
-   - Save the model
-   - Give the model a prompt
-
 
 ---
 The **`own_gpt_optimized`** folder:
