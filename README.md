@@ -44,14 +44,15 @@ Custom GPT:
 
 Llama 3.2 1b (4 bit quantized) finetuned: 
 
-| Metric               | Value       |
-|----------------------|-------------|
-| Final Eval Loss      | 1.84        |
-| Inference Latency    | 3860.18 ms  |
-| Model Size           | XX MB       |
-| Peak Memory Use      | 3.557 GB    |
-| Training Time/Epoch  | 242.5 s     |
-| Device               | A100        |
+| Metric                    | Value       |
+|---------------------------|-------------|
+| Final Eval Loss           | 1.84        |
+| Final Eval Perplexity     | 1.84        |
+| Inference Latency         | 3860.18 ms  |
+| Model Size                | 2.3 GB      |
+| Peak Memory Use           | 3.557 GB    |
+| Training Time/Epoch       | 242.5 s     |
+| Device                    | A100        |
 
 
 
